@@ -1,85 +1,222 @@
 <template>
     <div class="sudoku-game">
         <DifficultySelector @difficulty-selected="generateGrid" />
-        <SudokuGrid :grid="grid" />
+        <div class="game-container">
+            <SudokuGrid :grid="grid" @cell-selected="selectCell" :invalid-cells="invalidCells" />
+            <div class="number-buttons">
+                <button v-for="num in numbers" :key="num" @click="setNumber(num)" class="number-button">
+                    {{ num }}
+                </button>
+            </div>
+        </div>
+        <div class="life-counter">
+            <p>Vies restantes: {{ remainingLives }}</p>
+        </div>
+        <GameOverModal :isVisible="gameOver" @restart="restartGame" />
     </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from "vue";
+import { defineComponent, ref, onMounted, onBeforeUnmount } from "vue";
 import SudokuGrid from "./SudokuGrid.vue";
 import DifficultySelector from "./DifficultySelector.vue";
+import GameOverModal from "./GameOverModal.vue";
 
 export default defineComponent({
     name: "SudokuGame",
-    components: { SudokuGrid, DifficultySelector },
+    components: { SudokuGrid, DifficultySelector, GameOverModal },
     setup() {
-        // Utilisation de null pour les cases vides
         const grid = ref<(number | null)[][]>(Array.from({ length: 9 }, () => Array(9).fill(null)));
+        const fullGrid = ref<(number | null)[][]>(Array.from({ length: 9 }, () => Array(9).fill(null)));
+        const selectedRow = ref<number | null>(null);
+        const selectedCol = ref<number | null>(null);
+        const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+        const invalidCells = ref<{ row: number, col: number }[]>([]);
 
-        const generateGrid = (difficulty: string) => {
-            const numbersToFill = difficulty === "easy" ? 38 : difficulty === "medium" ? 29 : 20;
+        const maxLives = 3;
+        const remainingLives = ref(maxLives);
+        const gameOver = ref(false);
 
-            // Réinitialiser la grille
-            const newGrid = Array.from({ length: 9 }, () => Array(9).fill(null)); // Utiliser null au lieu de 0
-
-            // Fonction pour vérifier si un nombre est valide dans une position donnée
-            const isValid = (grid: number[][], row: number, col: number, num: number): boolean => {
-                // Vérifier la ligne
-                for (let i = 0; i < 9; i++) {
-                    if (grid[row][i] === num) return false;
-                }
-
-                // Vérifier la colonne
-                for (let i = 0; i < 9; i++) {
-                    if (grid[i][col] === num) return false;
-                }
-
-                // Vérifier le carré de 3x3
-                const startRow = Math.floor(row / 3) * 3;
-                const startCol = Math.floor(col / 3) * 3;
-                for (let i = startRow; i < startRow + 3; i++) {
-                    for (let j = startCol; j < startCol + 3; j++) {
-                        if (grid[i][j] === num) return false;
-                    }
-                }
-
-                return true;
-            };
-
-            // Remplir la grille avec des nombres aléatoires en respectant les règles
-            let numbersFilled = 0;
-            while (numbersFilled < numbersToFill) {
-                let row = Math.floor(Math.random() * 9);
-                let col = Math.floor(Math.random() * 9);
-                let num = Math.floor(Math.random() * 9) + 1;
-
-                // Vérifier si le nombre peut être placé
-                if (newGrid[row][col] === null && isValid(newGrid, row, col, num)) {
-                    newGrid[row][col] = num;
-                    numbersFilled++;
-                }
-            }
-
-            // Passer la grille générée au composant
-            grid.value = newGrid;
+        const logGrid = () => {
+            console.log("Grille complète (révélée) :");
+            fullGrid.value.forEach(row => {
+                console.log(row.map(cell => (cell === null ? "." : cell)).join(" "));
+            });
+            console.log("\nGrille actuelle (jouable) :");
+            grid.value.forEach(row => {
+                console.log(row.map(cell => (cell === null ? "." : cell)).join(" "));
+            });
         };
 
+        const generateGrid = (difficulty: string) => {
+            const generateFullGrid = (): (number | null)[][] => {
+                const grid: (number | null)[][] = Array.from({ length: 9 }, () => Array(9).fill(null));
+
+                const isValid = (grid: (number | null)[][], row: number, col: number, num: number): boolean => {
+                    for (let i = 0; i < 9; i++) {
+                        if (grid[row][i] === num) return false;
+                    }
+                    for (let i = 0; i < 9; i++) {
+                        if (grid[i][col] === num) return false;
+                    }
+                    const startRow = Math.floor(row / 3) * 3;
+                    const startCol = Math.floor(col / 3) * 3;
+                    for (let i = startRow; i < startRow + 3; i++) {
+                        for (let j = startCol; j < startCol + 3; j++) {
+                            if (grid[i][j] === num) return false;
+                        }
+                    }
+                    return true;
+                };
+
+                const fillGrid = (grid: (number | null)[][]): boolean => {
+                    for (let row = 0; row < 9; row++) {
+                        for (let col = 0; col < 9; col++) {
+                            if (grid[row][col] === null) {
+                                const numbers = Array.from({ length: 9 }, (_, i) => i + 1).sort(() => Math.random() - 0.5);
+                                for (const num of numbers) {
+                                    if (isValid(grid, row, col, num)) {
+                                        grid[row][col] = num;
+                                        if (fillGrid(grid)) return true;
+                                        grid[row][col] = null;
+                                    }
+                                }
+                                return false;
+                            }
+                        }
+                    }
+                    return true;
+                };
+
+                fillGrid(grid);
+                return grid;
+            };
+
+            const fullGridCopy = generateFullGrid();
+            fullGrid.value = fullGridCopy;
+            const numbersToRemove = difficulty === "easy" ? 38 : difficulty === "medium" ? 49 : 60;
+            const playableGrid: (number | null)[][] = fullGridCopy.map(row => [...row]);
+
+            for (let i = 0; i < numbersToRemove; i++) {
+                let row, col;
+                do {
+                    row = Math.floor(Math.random() * 9);
+                    col = Math.floor(Math.random() * 9);
+                } while (playableGrid[row][col] === null);
+
+                playableGrid[row][col] = null;
+            }
+
+            grid.value = playableGrid;
+            logGrid();
+        };
+
+        const selectCell = (row: number, col: number) => {
+            selectedRow.value = row;
+            selectedCol.value = col;
+        };
+
+        const validateNumber = (row: number, col: number, num: number) => {
+            if (fullGrid.value[row][col] !== num) {
+                if (!invalidCells.value.some(cell => cell.row === row && cell.col === col)) {
+                    invalidCells.value.push({ row, col });
+                    remainingLives.value--;  // Perdre une vie en cas d'erreur
+                    if (remainingLives.value <= 0) {
+                        gameOver.value = true; // Si les vies sont épuisées, le jeu est terminé
+                    }
+                }
+            } else {
+                invalidCells.value = invalidCells.value.filter(cell => cell.row !== row || cell.col !== col);
+            }
+        };
+
+        const setNumber = (num: number) => {
+            if (selectedRow.value !== null && selectedCol.value !== null) {
+                if (grid.value[selectedRow.value][selectedCol.value] === null) {
+                    grid.value[selectedRow.value][selectedCol.value] = num;
+                    validateNumber(selectedRow.value, selectedCol.value, num);
+                    logGrid();
+                }
+            }
+        };
+
+        const restartGame = () => {
+            window.location.reload(); // Recharge la page pour réinitialiser le jeu
+        };
+
+
+        // Définition de la fonction handleKeydown pour empêcher la saisie au clavier
+        const handleKeydown = (event: KeyboardEvent) => {
+            event.preventDefault(); // Empêche toute entrée clavier
+        };
+
+        // Ajouter l'écouteur d'événements pour intercepter la saisie au clavier
+        onMounted(() => {
+            window.addEventListener("keydown", handleKeydown);
+        });
+
+        // Supprimer l'écouteur d'événements lors de la destruction du composant
+        onBeforeUnmount(() => {
+            window.removeEventListener("keydown", handleKeydown);
+        });
 
         generateGrid('easy');
 
         return {
             grid,
             generateGrid,
+            selectCell,
+            setNumber,
+            numbers,
+            invalidCells,
+            remainingLives,
+            gameOver,
+            restartGame,
         };
     },
 });
 </script>
+
 
 <style scoped>
 .sudoku-game {
     display: flex;
     flex-direction: column;
     align-items: center;
+}
+
+.game-container {
+    display: flex;
+}
+
+.number-buttons {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin-left: 20px;
+}
+
+.number-button {
+    font-size: 20px;
+    padding: 10px;
+    margin: 5px;
+    cursor: pointer;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+    margin-left: 50px;
+}
+
+.number-button:hover {
+    background-color: #e0e0e0;
+}
+
+.life-counter {
+    margin-top: 10px;
+}
+
+.invalid {
+    color: red;
 }
 </style>

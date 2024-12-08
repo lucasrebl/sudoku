@@ -1,21 +1,12 @@
 <template>
     <div class="difficulty-selector">
-        <button 
-            @click="selectDifficulty('easy')" 
-            :class="{'selected': selectedDifficulty === 'easy'}"
-        >
+        <button @click="selectDifficulty('easy')" :class="{ 'selected': selectedDifficulty === 'easy' }">
             Easy
         </button>
-        <button 
-            @click="selectDifficulty('medium')" 
-            :class="{'selected': selectedDifficulty === 'medium'}"
-        >
+        <button @click="selectDifficulty('medium')" :class="{ 'selected': selectedDifficulty === 'medium' }">
             Medium
         </button>
-        <button 
-            @click="selectDifficulty('hard')" 
-            :class="{'selected': selectedDifficulty === 'hard'}"
-        >
+        <button @click="selectDifficulty('hard')" :class="{ 'selected': selectedDifficulty === 'hard' }">
             Hard
         </button>
     </div>
@@ -64,7 +55,8 @@ button {
 
 /* Ajouter une couleur différente pour chaque difficulté */
 button.selected {
-    background-color: #007BFF; /* Bleu pour la difficulté sélectionnée */
+    background-color: #007BFF;
+    /* Bleu pour la difficulté sélectionnée */
     color: white;
 }
 
