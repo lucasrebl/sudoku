@@ -1,12 +1,19 @@
 <template>
     <div class="sudoku-game">
         <DifficultySelector @difficulty-selected="generateGrid" />
-        <SudokuGrid :grid="grid" />
+        <div class="game-container">
+            <SudokuGrid :grid="grid" @cell-selected="selectCell" />
+            <div class="number-buttons">
+                <button v-for="num in numbers" :key="num" @click="setNumber(num)" class="number-button">
+                    {{ num }}
+                </button>
+            </div>
+        </div>
     </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from "vue";
+import { defineComponent, ref, watch } from "vue";
 import SudokuGrid from "./SudokuGrid.vue";
 import DifficultySelector from "./DifficultySelector.vue";
 
@@ -14,26 +21,26 @@ export default defineComponent({
     name: "SudokuGame",
     components: { SudokuGrid, DifficultySelector },
     setup() {
-        // Utilisation de null pour les cases vides
         const grid = ref<(number | null)[][]>(Array.from({ length: 9 }, () => Array(9).fill(null)));
+        const selectedRow = ref<number | null>(null);
+        const selectedCol = ref<number | null>(null);
+        const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]; // Nombres de 1 à 9
+        const currentNumber = ref<number | null>(null);
 
+        // Fonction pour générer une grille valide
         const generateGrid = (difficulty: string) => {
-            // Fonction pour générer une grille complète valide
             const generateFullGrid = (): (number | null)[][] => {
                 const grid: (number | null)[][] = Array.from({ length: 9 }, () => Array(9).fill(null));
 
                 const isValid = (grid: (number | null)[][], row: number, col: number, num: number): boolean => {
-                    // Vérifier la ligne
                     for (let i = 0; i < 9; i++) {
                         if (grid[row][i] === num) return false;
                     }
 
-                    // Vérifier la colonne
                     for (let i = 0; i < 9; i++) {
                         if (grid[i][col] === num) return false;
                     }
 
-                    // Vérifier le carré de 3x3
                     const startRow = Math.floor(row / 3) * 3;
                     const startCol = Math.floor(col / 3) * 3;
                     for (let i = startRow; i < startRow + 3; i++) {
@@ -68,13 +75,11 @@ export default defineComponent({
                 return grid;
             };
 
-            // Générer une grille complète
             const fullGrid = generateFullGrid();
-
-            // Supprimer des chiffres pour créer une grille jouable
             const numbersToRemove = difficulty === "easy" ? 38 : difficulty === "medium" ? 49 : 60;
             const playableGrid: (number | null)[][] = fullGrid.map(row => [...row]);
 
+            // Supprimer des chiffres pour rendre le jeu jouable
             for (let i = 0; i < numbersToRemove; i++) {
                 let row, col;
                 do {
@@ -85,16 +90,32 @@ export default defineComponent({
                 playableGrid[row][col] = null;
             }
 
-            // Mettre à jour la grille
-            grid.value = playableGrid;
+            grid.value = playableGrid; // Met à jour la grille
         };
 
+        const selectCell = (row: number, col: number) => {
+            selectedRow.value = row;
+            selectedCol.value = col;
+        };
 
+        const setNumber = (num: number) => {
+            if (selectedRow.value !== null && selectedCol.value !== null) {
+                // Ne permet pas de modifier les cases déjà remplies
+                if (grid.value[selectedRow.value][selectedCol.value] === null) {
+                    grid.value[selectedRow.value][selectedCol.value] = num;
+                }
+            }
+        };
+
+        // Générer la grille lors du premier chargement (difficulté par défaut : "easy")
         generateGrid('easy');
 
         return {
             grid,
             generateGrid,
+            selectCell,
+            setNumber,
+            numbers
         };
     },
 });
@@ -105,5 +126,31 @@ export default defineComponent({
     display: flex;
     flex-direction: column;
     align-items: center;
+}
+
+.game-container {
+    display: flex;
+}
+
+.number-buttons {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin-left: 20px;
+}
+
+.number-button {
+    font-size: 20px;
+    padding: 10px;
+    margin: 5px;
+    cursor: pointer;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.number-button:hover {
+    background-color: #e0e0e0;
 }
 </style>
