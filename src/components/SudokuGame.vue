@@ -13,7 +13,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from "vue";
+import { defineComponent, ref, onMounted, onBeforeUnmount } from "vue";
 import SudokuGrid from "./SudokuGrid.vue";
 import DifficultySelector from "./DifficultySelector.vue";
 
@@ -121,6 +121,21 @@ export default defineComponent({
                 }
             }
         };
+
+        // Empêcher toute saisie au clavier
+        const handleKeydown = (event: KeyboardEvent) => {
+            event.preventDefault(); // Bloque toute entrée clavier
+        };
+
+        // Ajouter l'écouteur d'événement pour intercepter la saisie au clavier
+        onMounted(() => {
+            window.addEventListener("keydown", handleKeydown);
+        });
+
+        // Supprimer l'écouteur d'événement lors de la destruction du composant
+        onBeforeUnmount(() => {
+            window.removeEventListener("keydown", handleKeydown);
+        });
 
         generateGrid('easy'); // Générer la grille au départ
 
