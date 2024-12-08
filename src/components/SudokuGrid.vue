@@ -34,8 +34,9 @@ export default defineComponent({
 .sudoku-grid {
     display: grid;
     grid-template-columns: repeat(9, 1fr);
-    gap: 2px;
-    max-width: 360px;
+    gap: 5px;
+    width: 360px;
+    /* Définir une largeur fixe pour la grille */
 }
 
 .row {
