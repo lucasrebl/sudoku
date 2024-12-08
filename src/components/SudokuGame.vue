@@ -9,6 +9,10 @@
                 </button>
             </div>
         </div>
+        <div class="life-counter">
+            <p>Vies restantes: {{ remainingLives }}</p>
+        </div>
+        <GameOverModal :isVisible="gameOver" @restart="restartGame" />
     </div>
 </template>
 
@@ -16,20 +20,23 @@
 import { defineComponent, ref, onMounted, onBeforeUnmount } from "vue";
 import SudokuGrid from "./SudokuGrid.vue";
 import DifficultySelector from "./DifficultySelector.vue";
+import GameOverModal from "./GameOverModal.vue";
 
 export default defineComponent({
     name: "SudokuGame",
-    components: { SudokuGrid, DifficultySelector },
+    components: { SudokuGrid, DifficultySelector, GameOverModal },
     setup() {
         const grid = ref<(number | null)[][]>(Array.from({ length: 9 }, () => Array(9).fill(null)));
-        const fullGrid = ref<(number | null)[][]>(Array.from({ length: 9 }, () => Array(9).fill(null))); // Grille complète avec tous les chiffres révélés
+        const fullGrid = ref<(number | null)[][]>(Array.from({ length: 9 }, () => Array(9).fill(null)));
         const selectedRow = ref<number | null>(null);
         const selectedCol = ref<number | null>(null);
         const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-        const currentNumber = ref<number | null>(null);
-        const invalidCells = ref<{ row: number, col: number }[]>([]); // Liste des cellules invalides
+        const invalidCells = ref<{ row: number, col: number }[]>([]);
 
-        // Fonction pour afficher la grille complète (avec les chiffres révélés)
+        const maxLives = 3;
+        const remainingLives = ref(maxLives);
+        const gameOver = ref(false);
+
         const logGrid = () => {
             console.log("Grille complète (révélée) :");
             fullGrid.value.forEach(row => {
@@ -41,7 +48,6 @@ export default defineComponent({
             });
         };
 
-        // Fonction pour générer une grille valide complète
         const generateGrid = (difficulty: string) => {
             const generateFullGrid = (): (number | null)[][] => {
                 const grid: (number | null)[][] = Array.from({ length: 9 }, () => Array(9).fill(null));
@@ -50,11 +56,9 @@ export default defineComponent({
                     for (let i = 0; i < 9; i++) {
                         if (grid[row][i] === num) return false;
                     }
-
                     for (let i = 0; i < 9; i++) {
                         if (grid[i][col] === num) return false;
                     }
-
                     const startRow = Math.floor(row / 3) * 3;
                     const startCol = Math.floor(col / 3) * 3;
                     for (let i = startRow; i < startRow + 3; i++) {
@@ -62,7 +66,6 @@ export default defineComponent({
                             if (grid[i][j] === num) return false;
                         }
                     }
-
                     return true;
                 };
 
@@ -90,8 +93,7 @@ export default defineComponent({
             };
 
             const fullGridCopy = generateFullGrid();
-            fullGrid.value = fullGridCopy; // Stocker la grille complète (avec tous les chiffres révélés)
-
+            fullGrid.value = fullGridCopy;
             const numbersToRemove = difficulty === "easy" ? 38 : difficulty === "medium" ? 49 : 60;
             const playableGrid: (number | null)[][] = fullGridCopy.map(row => [...row]);
 
@@ -105,56 +107,60 @@ export default defineComponent({
                 playableGrid[row][col] = null;
             }
 
-            grid.value = playableGrid; // Met à jour la grille jouable (avec des cases vides)
-            logGrid(); // Affiche les deux grilles dans la console
+            grid.value = playableGrid;
+            logGrid();
         };
 
-        // Fonction de sélection de cellule
         const selectCell = (row: number, col: number) => {
             selectedRow.value = row;
             selectedCol.value = col;
         };
 
-        // Fonction pour vérifier si le nombre ajouté est valide
         const validateNumber = (row: number, col: number, num: number) => {
             if (fullGrid.value[row][col] !== num) {
-                // Ajouter la cellule à la liste des cellules invalides
                 if (!invalidCells.value.some(cell => cell.row === row && cell.col === col)) {
                     invalidCells.value.push({ row, col });
+                    remainingLives.value--;  // Perdre une vie en cas d'erreur
+                    if (remainingLives.value <= 0) {
+                        gameOver.value = true; // Si les vies sont épuisées, le jeu est terminé
+                    }
                 }
             } else {
-                // Supprimer la cellule de la liste des cellules invalides si elle est valide
                 invalidCells.value = invalidCells.value.filter(cell => cell.row !== row || cell.col !== col);
             }
         };
 
-        // Fonction pour mettre un nombre dans la grille
         const setNumber = (num: number) => {
             if (selectedRow.value !== null && selectedCol.value !== null) {
                 if (grid.value[selectedRow.value][selectedCol.value] === null) {
                     grid.value[selectedRow.value][selectedCol.value] = num;
-                    validateNumber(selectedRow.value, selectedCol.value, num); // Vérifier la validité du nombre
-                    logGrid(); // Affiche la grille dans la console après chaque modification
+                    validateNumber(selectedRow.value, selectedCol.value, num);
+                    logGrid();
                 }
             }
         };
 
-        // Empêcher toute saisie au clavier
-        const handleKeydown = (event: KeyboardEvent) => {
-            event.preventDefault(); // Bloque toute entrée clavier
+        const restartGame = () => {
+            window.location.reload(); // Recharge la page pour réinitialiser le jeu
         };
 
-        // Ajouter l'écouteur d'événement pour intercepter la saisie au clavier
+
+        // Définition de la fonction handleKeydown pour empêcher la saisie au clavier
+        const handleKeydown = (event: KeyboardEvent) => {
+            event.preventDefault(); // Empêche toute entrée clavier
+        };
+
+        // Ajouter l'écouteur d'événements pour intercepter la saisie au clavier
         onMounted(() => {
             window.addEventListener("keydown", handleKeydown);
         });
 
-        // Supprimer l'écouteur d'événement lors de la destruction du composant
+        // Supprimer l'écouteur d'événements lors de la destruction du composant
         onBeforeUnmount(() => {
             window.removeEventListener("keydown", handleKeydown);
         });
 
-        generateGrid('easy'); // Générer la grille au départ
+        generateGrid('easy');
 
         return {
             grid,
@@ -162,11 +168,15 @@ export default defineComponent({
             selectCell,
             setNumber,
             numbers,
-            invalidCells // Liste des cellules invalides
+            invalidCells,
+            remainingLives,
+            gameOver,
+            restartGame,
         };
     },
 });
 </script>
+
 
 <style scoped>
 .sudoku-game {
@@ -202,7 +212,10 @@ export default defineComponent({
     background-color: #e0e0e0;
 }
 
-/* Style pour afficher les nombres invalides en rouge */
+.life-counter {
+    margin-top: 10px;
+}
+
 .invalid {
     color: red;
 }
