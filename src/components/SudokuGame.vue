@@ -2,7 +2,7 @@
     <div class="sudoku-game">
         <DifficultySelector @difficulty-selected="generateGrid" />
         <div class="game-container">
-            <SudokuGrid :grid="grid" @cell-selected="selectCell" />
+            <SudokuGrid :grid="grid" @cell-selected="selectCell" :invalid-cells="invalidCells" />
             <div class="number-buttons">
                 <button v-for="num in numbers" :key="num" @click="setNumber(num)" class="number-button">
                     {{ num }}
@@ -27,6 +27,7 @@ export default defineComponent({
         const selectedCol = ref<number | null>(null);
         const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
         const currentNumber = ref<number | null>(null);
+        const invalidCells = ref<{ row: number, col: number }[]>([]); // Liste des cellules invalides
 
         // Fonction pour afficher la grille complète (avec les chiffres révélés)
         const logGrid = () => {
@@ -108,15 +109,31 @@ export default defineComponent({
             logGrid(); // Affiche les deux grilles dans la console
         };
 
+        // Fonction de sélection de cellule
         const selectCell = (row: number, col: number) => {
             selectedRow.value = row;
             selectedCol.value = col;
         };
 
+        // Fonction pour vérifier si le nombre ajouté est valide
+        const validateNumber = (row: number, col: number, num: number) => {
+            if (fullGrid.value[row][col] !== num) {
+                // Ajouter la cellule à la liste des cellules invalides
+                if (!invalidCells.value.some(cell => cell.row === row && cell.col === col)) {
+                    invalidCells.value.push({ row, col });
+                }
+            } else {
+                // Supprimer la cellule de la liste des cellules invalides si elle est valide
+                invalidCells.value = invalidCells.value.filter(cell => cell.row !== row || cell.col !== col);
+            }
+        };
+
+        // Fonction pour mettre un nombre dans la grille
         const setNumber = (num: number) => {
             if (selectedRow.value !== null && selectedCol.value !== null) {
                 if (grid.value[selectedRow.value][selectedCol.value] === null) {
                     grid.value[selectedRow.value][selectedCol.value] = num;
+                    validateNumber(selectedRow.value, selectedCol.value, num); // Vérifier la validité du nombre
                     logGrid(); // Affiche la grille dans la console après chaque modification
                 }
             }
@@ -144,7 +161,8 @@ export default defineComponent({
             generateGrid,
             selectCell,
             setNumber,
-            numbers
+            numbers,
+            invalidCells // Liste des cellules invalides
         };
     },
 });
@@ -177,9 +195,15 @@ export default defineComponent({
     border: 1px solid #ccc;
     border-radius: 5px;
     transition: background-color 0.3s ease;
+    margin-left: 50px;
 }
 
 .number-button:hover {
     background-color: #e0e0e0;
+}
+
+/* Style pour afficher les nombres invalides en rouge */
+.invalid {
+    color: red;
 }
 </style>
