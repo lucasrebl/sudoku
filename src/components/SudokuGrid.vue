@@ -1,14 +1,9 @@
 <template>
     <div class="sudoku-grid">
         <div v-for="(row, rowIndex) in grid" :key="rowIndex" class="row">
-            <div v-for="(cell, colIndex) in row" :key="colIndex" class="cell">
-                <input 
-                    type="text" 
-                    maxlength="1" 
-                    v-model="grid[rowIndex][colIndex]" 
-                    class="cell-input"
-                    :disabled="cell !== null"
-                    :placeholder="cell === null ? '' : undefined" />
+            <div v-for="(cell, colIndex) in row" :key="colIndex" class="cell" @click="selectCell(rowIndex, colIndex)">
+                <input type="text" maxlength="1" v-model="grid[rowIndex][colIndex]" class="cell-input"
+                    :disabled="cell !== null" :placeholder="cell === null ? '' : undefined" />
             </div>
         </div>
     </div>
@@ -24,6 +19,12 @@ export default defineComponent({
         grid: {
             type: Array as PropType<(number | null)[][]>,
             required: true,
+        },
+    },
+    emits: ["cell-selected"],
+    methods: {
+        selectCell(row: number, col: number) {
+            this.$emit("cell-selected", row, col);
         },
     },
 });
@@ -58,14 +59,6 @@ export default defineComponent({
     border-bottom: 2px solid #000;
 }
 
-.cell:nth-child(3n+1) {
-    border-left: 2px solid #000;
-}
-
-.row:nth-child(3n+1) .cell {
-    border-top: 2px solid #000; 
-}
-
 .cell-input {
     width: 100%;
     height: 100%;
@@ -76,9 +69,4 @@ export default defineComponent({
     font-weight: bold;
     background-color: white;
 }
-
-.cell-input::placeholder {
-    color: transparent;
-}
-
 </style>

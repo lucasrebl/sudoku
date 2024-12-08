@@ -18,51 +18,75 @@ export default defineComponent({
         const grid = ref<(number | null)[][]>(Array.from({ length: 9 }, () => Array(9).fill(null)));
 
         const generateGrid = (difficulty: string) => {
-            const numbersToFill = difficulty === "easy" ? 38 : difficulty === "medium" ? 29 : 20;
+            // Fonction pour générer une grille complète valide
+            const generateFullGrid = (): (number | null)[][] => {
+                const grid: (number | null)[][] = Array.from({ length: 9 }, () => Array(9).fill(null));
 
-            // Réinitialiser la grille
-            const newGrid = Array.from({ length: 9 }, () => Array(9).fill(null)); // Utiliser null au lieu de 0
-
-            // Fonction pour vérifier si un nombre est valide dans une position donnée
-            const isValid = (grid: number[][], row: number, col: number, num: number): boolean => {
-                // Vérifier la ligne
-                for (let i = 0; i < 9; i++) {
-                    if (grid[row][i] === num) return false;
-                }
-
-                // Vérifier la colonne
-                for (let i = 0; i < 9; i++) {
-                    if (grid[i][col] === num) return false;
-                }
-
-                // Vérifier le carré de 3x3
-                const startRow = Math.floor(row / 3) * 3;
-                const startCol = Math.floor(col / 3) * 3;
-                for (let i = startRow; i < startRow + 3; i++) {
-                    for (let j = startCol; j < startCol + 3; j++) {
-                        if (grid[i][j] === num) return false;
+                const isValid = (grid: (number | null)[][], row: number, col: number, num: number): boolean => {
+                    // Vérifier la ligne
+                    for (let i = 0; i < 9; i++) {
+                        if (grid[row][i] === num) return false;
                     }
-                }
 
-                return true;
+                    // Vérifier la colonne
+                    for (let i = 0; i < 9; i++) {
+                        if (grid[i][col] === num) return false;
+                    }
+
+                    // Vérifier le carré de 3x3
+                    const startRow = Math.floor(row / 3) * 3;
+                    const startCol = Math.floor(col / 3) * 3;
+                    for (let i = startRow; i < startRow + 3; i++) {
+                        for (let j = startCol; j < startCol + 3; j++) {
+                            if (grid[i][j] === num) return false;
+                        }
+                    }
+
+                    return true;
+                };
+
+                const fillGrid = (grid: (number | null)[][]): boolean => {
+                    for (let row = 0; row < 9; row++) {
+                        for (let col = 0; col < 9; col++) {
+                            if (grid[row][col] === null) {
+                                const numbers = Array.from({ length: 9 }, (_, i) => i + 1).sort(() => Math.random() - 0.5);
+                                for (const num of numbers) {
+                                    if (isValid(grid, row, col, num)) {
+                                        grid[row][col] = num;
+                                        if (fillGrid(grid)) return true;
+                                        grid[row][col] = null;
+                                    }
+                                }
+                                return false;
+                            }
+                        }
+                    }
+                    return true;
+                };
+
+                fillGrid(grid);
+                return grid;
             };
 
-            // Remplir la grille avec des nombres aléatoires en respectant les règles
-            let numbersFilled = 0;
-            while (numbersFilled < numbersToFill) {
-                let row = Math.floor(Math.random() * 9);
-                let col = Math.floor(Math.random() * 9);
-                let num = Math.floor(Math.random() * 9) + 1;
+            // Générer une grille complète
+            const fullGrid = generateFullGrid();
 
-                // Vérifier si le nombre peut être placé
-                if (newGrid[row][col] === null && isValid(newGrid, row, col, num)) {
-                    newGrid[row][col] = num;
-                    numbersFilled++;
-                }
+            // Supprimer des chiffres pour créer une grille jouable
+            const numbersToRemove = difficulty === "easy" ? 38 : difficulty === "medium" ? 49 : 60;
+            const playableGrid: (number | null)[][] = fullGrid.map(row => [...row]);
+
+            for (let i = 0; i < numbersToRemove; i++) {
+                let row, col;
+                do {
+                    row = Math.floor(Math.random() * 9);
+                    col = Math.floor(Math.random() * 9);
+                } while (playableGrid[row][col] === null);
+
+                playableGrid[row][col] = null;
             }
 
-            // Passer la grille générée au composant
-            grid.value = newGrid;
+            // Mettre à jour la grille
+            grid.value = playableGrid;
         };
 
 
