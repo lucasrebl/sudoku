@@ -13,7 +13,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, watch } from "vue";
+import { defineComponent, ref } from "vue";
 import SudokuGrid from "./SudokuGrid.vue";
 import DifficultySelector from "./DifficultySelector.vue";
 
@@ -22,12 +22,25 @@ export default defineComponent({
     components: { SudokuGrid, DifficultySelector },
     setup() {
         const grid = ref<(number | null)[][]>(Array.from({ length: 9 }, () => Array(9).fill(null)));
+        const fullGrid = ref<(number | null)[][]>(Array.from({ length: 9 }, () => Array(9).fill(null))); // Grille complète avec tous les chiffres révélés
         const selectedRow = ref<number | null>(null);
         const selectedCol = ref<number | null>(null);
-        const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]; // Nombres de 1 à 9
+        const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
         const currentNumber = ref<number | null>(null);
 
-        // Fonction pour générer une grille valide
+        // Fonction pour afficher la grille complète (avec les chiffres révélés)
+        const logGrid = () => {
+            console.log("Grille complète (révélée) :");
+            fullGrid.value.forEach(row => {
+                console.log(row.map(cell => (cell === null ? "." : cell)).join(" "));
+            });
+            console.log("\nGrille actuelle (jouable) :");
+            grid.value.forEach(row => {
+                console.log(row.map(cell => (cell === null ? "." : cell)).join(" "));
+            });
+        };
+
+        // Fonction pour générer une grille valide complète
         const generateGrid = (difficulty: string) => {
             const generateFullGrid = (): (number | null)[][] => {
                 const grid: (number | null)[][] = Array.from({ length: 9 }, () => Array(9).fill(null));
@@ -75,11 +88,12 @@ export default defineComponent({
                 return grid;
             };
 
-            const fullGrid = generateFullGrid();
-            const numbersToRemove = difficulty === "easy" ? 38 : difficulty === "medium" ? 49 : 60;
-            const playableGrid: (number | null)[][] = fullGrid.map(row => [...row]);
+            const fullGridCopy = generateFullGrid();
+            fullGrid.value = fullGridCopy; // Stocker la grille complète (avec tous les chiffres révélés)
 
-            // Supprimer des chiffres pour rendre le jeu jouable
+            const numbersToRemove = difficulty === "easy" ? 38 : difficulty === "medium" ? 49 : 60;
+            const playableGrid: (number | null)[][] = fullGridCopy.map(row => [...row]);
+
             for (let i = 0; i < numbersToRemove; i++) {
                 let row, col;
                 do {
@@ -90,7 +104,8 @@ export default defineComponent({
                 playableGrid[row][col] = null;
             }
 
-            grid.value = playableGrid; // Met à jour la grille
+            grid.value = playableGrid; // Met à jour la grille jouable (avec des cases vides)
+            logGrid(); // Affiche les deux grilles dans la console
         };
 
         const selectCell = (row: number, col: number) => {
@@ -100,15 +115,14 @@ export default defineComponent({
 
         const setNumber = (num: number) => {
             if (selectedRow.value !== null && selectedCol.value !== null) {
-                // Ne permet pas de modifier les cases déjà remplies
                 if (grid.value[selectedRow.value][selectedCol.value] === null) {
                     grid.value[selectedRow.value][selectedCol.value] = num;
+                    logGrid(); // Affiche la grille dans la console après chaque modification
                 }
             }
         };
 
-        // Générer la grille lors du premier chargement (difficulté par défaut : "easy")
-        generateGrid('easy');
+        generateGrid('easy'); // Générer la grille au départ
 
         return {
             grid,
