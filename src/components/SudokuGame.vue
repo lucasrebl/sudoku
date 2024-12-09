@@ -2,17 +2,21 @@
     <div class="sudoku-game">
         <DifficultySelector @difficulty-selected="generateGrid" />
         <div class="game-container">
-            <SudokuGrid :grid="grid" @cell-selected="selectCell" :invalid-cells="invalidCells" />
-            <div class="number-buttons">
-                <button v-for="num in numbers" :key="num" @click="setNumber(num)" class="number-button">
-                    {{ num }}
-                </button>
-            </div>
+            <SudokuGrid 
+                :grid="grid" 
+                @cell-selected="selectCell" 
+                :invalid-cells="invalidCells" 
+            />
+            <NumberButtons 
+                :numbers="numbers" 
+                @number-selected="setNumber" 
+            />
         </div>
-        <div class="life-counter">
-            <p>Vies restantes: {{ remainingLives }}</p>
-        </div>
-        <GameOverModal :isVisible="gameOver" @restart="restartGame" />
+        <LifeCounter :remaining-lives="remainingLives" />
+        <GameOverModal 
+            :isVisible="gameOver" 
+            @restart="restartGame" 
+        />
     </div>
 </template>
 
@@ -20,11 +24,13 @@
 import { defineComponent, ref, onMounted, onBeforeUnmount } from "vue";
 import SudokuGrid from "./SudokuGrid.vue";
 import DifficultySelector from "./DifficultySelector.vue";
+import NumberButtons from "./NumberButtons.vue";
+import LifeCounter from "./LifeCounter.vue";
 import GameOverModal from "./GameOverModal.vue";
 
 export default defineComponent({
     name: "SudokuGame",
-    components: { SudokuGrid, DifficultySelector, GameOverModal },
+    components: { SudokuGrid, DifficultySelector, NumberButtons, LifeCounter, GameOverModal },
     setup() {
         const grid = ref<(number | null)[][]>(Array.from({ length: 9 }, () => Array(9).fill(null)));
         const fullGrid = ref<(number | null)[][]>(Array.from({ length: 9 }, () => Array(9).fill(null)));
@@ -120,9 +126,9 @@ export default defineComponent({
             if (fullGrid.value[row][col] !== num) {
                 if (!invalidCells.value.some(cell => cell.row === row && cell.col === col)) {
                     invalidCells.value.push({ row, col });
-                    remainingLives.value--;  // Perdre une vie en cas d'erreur
+                    remainingLives.value--;
                     if (remainingLives.value <= 0) {
-                        gameOver.value = true; // Si les vies sont épuisées, le jeu est terminé
+                        gameOver.value = true;
                     }
                 }
             } else {
@@ -141,26 +147,22 @@ export default defineComponent({
         };
 
         const restartGame = () => {
-            window.location.reload(); // Recharge la page pour réinitialiser le jeu
+            window.location.reload();
         };
 
-
-        // Définition de la fonction handleKeydown pour empêcher la saisie au clavier
         const handleKeydown = (event: KeyboardEvent) => {
-            event.preventDefault(); // Empêche toute entrée clavier
+            event.preventDefault();
         };
 
-        // Ajouter l'écouteur d'événements pour intercepter la saisie au clavier
         onMounted(() => {
             window.addEventListener("keydown", handleKeydown);
         });
 
-        // Supprimer l'écouteur d'événements lors de la destruction du composant
         onBeforeUnmount(() => {
             window.removeEventListener("keydown", handleKeydown);
         });
 
-        generateGrid('easy');
+        generateGrid("easy");
 
         return {
             grid,
@@ -177,7 +179,6 @@ export default defineComponent({
 });
 </script>
 
-
 <style scoped>
 .sudoku-game {
     display: flex;
@@ -187,36 +188,5 @@ export default defineComponent({
 
 .game-container {
     display: flex;
-}
-
-.number-buttons {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    margin-left: 20px;
-}
-
-.number-button {
-    font-size: 20px;
-    padding: 10px;
-    margin: 5px;
-    cursor: pointer;
-    background-color: #f0f0f0;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    transition: background-color 0.3s ease;
-    margin-left: 50px;
-}
-
-.number-button:hover {
-    background-color: #e0e0e0;
-}
-
-.life-counter {
-    margin-top: 10px;
-}
-
-.invalid {
-    color: red;
 }
 </style>
