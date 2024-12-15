@@ -41,6 +41,8 @@ export default defineComponent({
     display: flex;
     justify-content: center;
     gap: 10px;
+    margin-top: 100px;
+    padding-right: 200px;
 }
 
 button {
@@ -53,14 +55,11 @@ button {
     transition: background-color 0.3s ease;
 }
 
-/* Ajouter une couleur différente pour chaque difficulté */
 button.selected {
     background-color: #007BFF;
-    /* Bleu pour la difficulté sélectionnée */
     color: white;
 }
 
-/* Style des boutons non sélectionnés */
 button:not(.selected):hover {
     background-color: #e0e0e0;
 }
