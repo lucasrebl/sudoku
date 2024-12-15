@@ -17,6 +17,10 @@
             :isVisible="gameOver" 
             @restart="restartGame" 
         />
+        <VictoryModal 
+            :isVisible="victory" 
+            @restart="restartGame" 
+        />
     </div>
 </template>
 
@@ -27,10 +31,11 @@ import DifficultySelector from "./DifficultySelector.vue";
 import NumberButtons from "./NumberButtons.vue";
 import LifeCounter from "./LifeCounter.vue";
 import GameOverModal from "./GameOverModal.vue";
+import VictoryModal from "./VictoryModal.vue";
 
 export default defineComponent({
     name: "SudokuGame",
-    components: { SudokuGrid, DifficultySelector, NumberButtons, LifeCounter, GameOverModal },
+    components: { SudokuGrid, DifficultySelector, NumberButtons, LifeCounter, GameOverModal, VictoryModal },
     setup() {
         const grid = ref<(number | null)[][]>(Array.from({ length: 9 }, () => Array(9).fill(null)));
         const fullGrid = ref<(number | null)[][]>(Array.from({ length: 9 }, () => Array(9).fill(null)));
@@ -42,6 +47,7 @@ export default defineComponent({
         const maxLives = 3;
         const remainingLives = ref(maxLives);
         const gameOver = ref(false);
+        const victory = ref(false);
 
         const logGrid = () => {
             console.log("Grille complète (révélée) :");
@@ -136,11 +142,25 @@ export default defineComponent({
             }
         };
 
+        const checkVictory = () => {
+            for (let row = 0; row < 9; row++) {
+                for (let col = 0; col < 9; col++) {
+                    if (grid.value[row][col] !== fullGrid.value[row][col]) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        };
+
         const setNumber = (num: number) => {
             if (selectedRow.value !== null && selectedCol.value !== null) {
                 if (grid.value[selectedRow.value][selectedCol.value] === null) {
                     grid.value[selectedRow.value][selectedCol.value] = num;
                     validateNumber(selectedRow.value, selectedCol.value, num);
+                    if (checkVictory()) {
+                        victory.value = true;
+                    }
                     logGrid();
                 }
             }
@@ -173,6 +193,7 @@ export default defineComponent({
             invalidCells,
             remainingLives,
             gameOver,
+            victory,
             restartGame,
         };
     },
