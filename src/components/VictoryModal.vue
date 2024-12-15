@@ -37,10 +37,11 @@ export default {
     display: flex;
     justify-content: center;
     align-items: center;
+    z-index: 3;
 }
 
 .modal-content {
-    background: white;
+    background: black;
     padding: 20px;
     text-align: center;
     border-radius: 5px;
