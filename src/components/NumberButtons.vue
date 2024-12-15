@@ -1,9 +1,6 @@
 <template>
     <div class="number-buttons">
-        <button 
-            v-for="num in numbers" 
-            :key="num" 
-            @click="onNumberClick(num)" 
+        <button v-for="num in numbers" :key="num" @click="onNumberClick(num)" :disabled="isButtonDisabled(num)"
             class="number-button">
             {{ num }}
         </button>
@@ -19,6 +16,10 @@ export default defineComponent({
     props: {
         numbers: {
             type: Array as PropType<number[]>,
+            required: true,
+        },
+        isButtonDisabled: {
+            type: Function as PropType<(num: number) => boolean>,
             required: true,
         },
     },
@@ -54,4 +55,8 @@ export default defineComponent({
     background-color: #e0e0e0;
 }
 
+.number-button:disabled {
+    background-color: #e0e0e0;
+    cursor: not-allowed;
+}
 </style>
