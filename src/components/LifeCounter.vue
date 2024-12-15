@@ -21,6 +21,6 @@ export default defineComponent({
 <style scoped>
 .life-counter {
     margin-top: 10px;
-    text-align: center;
+    padding-right: 200px;
 }
 </style>

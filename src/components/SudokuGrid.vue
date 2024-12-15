@@ -63,8 +63,9 @@ export default defineComponent({
     display: grid;
     grid-template-rows: repeat(9, 1fr);
     grid-template-columns: repeat(9, 1fr);
-    gap: 5px;
     width: 360px;
+    height: 360px;
+    border: 2px solid black;
 }
 
 .row {
@@ -73,11 +74,19 @@ export default defineComponent({
 
 .cell {
     position: relative;
-    width: 40px;
-    height: 40px;
     display: flex;
     justify-content: center;
     align-items: center;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+.cell:nth-child(3n) {
+    border-right: 2px solid black;
+}
+
+.row:nth-child(3n) .cell {
+    border-bottom: 2px solid black;
 }
 
 .cell-input {
@@ -85,14 +94,10 @@ export default defineComponent({
     height: 100%;
     text-align: center;
     font-size: 18px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    transition: background-color 0.3s ease;
+    border: none; 
+    outline: none;
     background-color: white;
-}
-
-.cell-input:focus {
-    background-color: #e0e0e0;
+    z-index: 1;
 }
 
 .invalid {
@@ -104,6 +109,7 @@ export default defineComponent({
     top: 0;
     right: 0;
     background: transparent;
+    z-index: 2;
     border: none;
     color: red;
     font-weight: bold;

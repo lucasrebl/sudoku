@@ -2,25 +2,12 @@
     <div class="sudoku-game">
         <DifficultySelector @difficulty-selected="generateGrid" />
         <div class="game-container">
-            <SudokuGrid 
-                :grid="grid" 
-                @cell-selected="selectCell" 
-                :invalid-cells="invalidCells" 
-            />
-            <NumberButtons 
-                :numbers="numbers" 
-                @number-selected="setNumber" 
-            />
+            <SudokuGrid :grid="grid" @cell-selected="selectCell" :invalid-cells="invalidCells" />
+            <NumberButtons :numbers="numbers" :isButtonDisabled="isButtonDisabled" @number-selected="setNumber" />
         </div>
         <LifeCounter :remaining-lives="remainingLives" />
-        <GameOverModal 
-            :isVisible="gameOver" 
-            @restart="restartGame" 
-        />
-        <VictoryModal 
-            :isVisible="victory" 
-            @restart="restartGame" 
-        />
+        <GameOverModal :isVisible="gameOver" @restart="restartGame" />
+        <VictoryModal :isVisible="victory" @restart="restartGame" />
     </div>
 </template>
 
@@ -43,22 +30,33 @@ export default defineComponent({
         const selectedCol = ref<number | null>(null);
         const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
         const invalidCells = ref<{ row: number, col: number }[]>([]);
+        const placedNumbers = ref<Record<number, number>>({
+            1: 0,
+            2: 0,
+            3: 0,
+            4: 0,
+            5: 0,
+            6: 0,
+            7: 0,
+            8: 0,
+            9: 0
+        });
 
         const maxLives = 3;
         const remainingLives = ref(maxLives);
         const gameOver = ref(false);
         const victory = ref(false);
 
-        const logGrid = () => {
-            console.log("Grille complète (révélée) :");
-            fullGrid.value.forEach(row => {
-                console.log(row.map(cell => (cell === null ? "." : cell)).join(" "));
-            });
-            console.log("\nGrille actuelle (jouable) :");
-            grid.value.forEach(row => {
-                console.log(row.map(cell => (cell === null ? "." : cell)).join(" "));
-            });
-        };
+        // const logGrid = () => {
+        //     console.log("Grille complète (révélée) :");
+        //     fullGrid.value.forEach(row => {
+        //         console.log(row.map(cell => (cell === null ? "." : cell)).join(" "));
+        //     });
+        //     console.log("\nGrille actuelle (jouable) :");
+        //     grid.value.forEach(row => {
+        //         console.log(row.map(cell => (cell === null ? "." : cell)).join(" "));
+        //     });
+        // };
 
         const generateGrid = (difficulty: string) => {
             const generateFullGrid = (): (number | null)[][] => {
@@ -120,7 +118,7 @@ export default defineComponent({
             }
 
             grid.value = playableGrid;
-            logGrid();
+            // logGrid();
         };
 
         const selectCell = (row: number, col: number) => {
@@ -158,12 +156,32 @@ export default defineComponent({
                 if (grid.value[selectedRow.value][selectedCol.value] === null) {
                     grid.value[selectedRow.value][selectedCol.value] = num;
                     validateNumber(selectedRow.value, selectedCol.value, num);
+                    checkNumberPlacement(num);
                     if (checkVictory()) {
                         victory.value = true;
                     }
-                    logGrid();
+                    // logGrid();
                 }
             }
+        };
+
+
+        const checkNumberPlacement = (num: number) => {
+            let count = 0;
+            for (let row = 0; row < 9; row++) {
+                for (let col = 0; col < 9; col++) {
+                    if (grid.value[row][col] === num && fullGrid.value[row][col] === num) {
+                        count++;
+                    }
+                }
+            }
+            placedNumbers.value[num] = count;
+        };
+
+        const isButtonDisabled = (num: number) => {
+            const totalCount = fullGrid.value.flat().filter(cell => cell === num).length;
+            const placedCount = placedNumbers.value[num];
+            return placedCount === totalCount;
         };
 
         const restartGame = () => {
@@ -195,6 +213,7 @@ export default defineComponent({
             gameOver,
             victory,
             restartGame,
+            isButtonDisabled,
         };
     },
 });
