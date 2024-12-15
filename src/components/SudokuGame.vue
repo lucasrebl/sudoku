@@ -47,16 +47,16 @@ export default defineComponent({
         const gameOver = ref(false);
         const victory = ref(false);
 
-        const logGrid = () => {
-            console.log("Grille complète (révélée) :");
-            fullGrid.value.forEach(row => {
-                console.log(row.map(cell => (cell === null ? "." : cell)).join(" "));
-            });
-            console.log("\nGrille actuelle (jouable) :");
-            grid.value.forEach(row => {
-                console.log(row.map(cell => (cell === null ? "." : cell)).join(" "));
-            });
-        };
+        // const logGrid = () => {
+        //     console.log("Grille complète (révélée) :");
+        //     fullGrid.value.forEach(row => {
+        //         console.log(row.map(cell => (cell === null ? "." : cell)).join(" "));
+        //     });
+        //     console.log("\nGrille actuelle (jouable) :");
+        //     grid.value.forEach(row => {
+        //         console.log(row.map(cell => (cell === null ? "." : cell)).join(" "));
+        //     });
+        // };
 
         const generateGrid = (difficulty: string) => {
             const generateFullGrid = (): (number | null)[][] => {
@@ -118,7 +118,7 @@ export default defineComponent({
             }
 
             grid.value = playableGrid;
-            logGrid();
+            // logGrid();
         };
 
         const selectCell = (row: number, col: number) => {
@@ -160,7 +160,7 @@ export default defineComponent({
                     if (checkVictory()) {
                         victory.value = true;
                     }
-                    logGrid();
+                    // logGrid();
                 }
             }
         };
